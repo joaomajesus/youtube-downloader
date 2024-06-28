@@ -1,7 +1,7 @@
 # YouTube Downloader
 ## Requirements
 - Install [ffmpeg](https://www.ffmpeg.org/download.html)
-- Create a virtual environment: ```python -m venv .```   
+- Create a virtual environment: ```python -m venv .venv```   
 - Activate environment:
   - Windows: ```.venv/Scripts/activate```
   - Linux/MacOS: ```source .venv/bin/activate```

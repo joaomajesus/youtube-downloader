@@ -38,7 +38,7 @@ def download_streams(url: str) -> (str, str):
                     .desc()
                     .first())
     audio_path = (audio_stream
-                  .download(filename=f"{audio_stream.title.replace("|", "-")}.m4a",
+                  .download(filename=f"{video_path.split(".")[0]}.m4a",
                             output_path=output_path))
 
     return audio_path, video_path
