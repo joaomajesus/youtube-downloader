@@ -3,6 +3,7 @@ import ffmpeg
 import os
 import sys
 
+
 def video_audio_mux(path_audio_source, path_image_source, out_video_path) -> None:
     video = ffmpeg.input(path_image_source).video
     audio = ffmpeg.input(path_audio_source).audio
