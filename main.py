@@ -20,7 +20,9 @@ def delete_file(file_path: str) -> None:
 
 def download_streams(url: str) -> (str, str, str):
     output_path = "downloads/"
+    chapters_path = ""
     yt = YouTube(url)
+
     video_path = (yt
                   .streams
                   .filter(progressive=False,
@@ -29,6 +31,7 @@ def download_streams(url: str) -> (str, str, str):
                   .desc()
                   .first()
                   .download(output_path=output_path))
+
     audio_stream = (yt
                     .streams
                     .filter(progressive=False,
@@ -48,8 +51,6 @@ def download_streams(url: str) -> (str, str, str):
 
     chapters = get_chapters(yt.description)
 
-    chapters_path = ""
-
     if len(chapters) > 0:
         chapters_path = f"{video_path.split(".")[0]}_chapter.txt"
         write_chapters_file(chapters_path, chapters)
@@ -64,27 +65,20 @@ def write_description_file(path, yt):
 
 
 def get_chapters(chapters_str: str) -> list:
-    """
-    Read the description file
-    Split into time and chapter name
-    """
-
     list_of_chapters = []
 
-    # only increment chapter number on a chapter line
-    # chapter lines start with timecode
     line_counter = 1
     for line in chapters_str.split('\n'):
         result = re.search(r"\(?(\d?[:]?\d+[:]\d+)\)?", line)
+
         try:
-            # result = re.search("\(?(\d+[:]\d+[:]\d+)\)?", line)
             time_count = datetime.datetime.strptime(result.group(1), '%H:%M:%S')
         except:
             try:
-                # result = re.search("\(?(\d+[:]\d+)\)?", line)
                 time_count = datetime.datetime.strptime(result.group(1), '%M:%S')
             except:
                 continue
+
         chap_name = line.replace(result.group(0), "").rstrip(' :\n')
         chap_pos = datetime.datetime.strftime(time_count, '%H:%M:%S')
         list_of_chapters.append((str(line_counter).zfill(2), chap_pos, chap_name))
@@ -104,7 +98,9 @@ def write_chapters_file(chapter_file: str, chapter_list: list) -> None:
 
 
 def add_chapters_to_mp4(chapter_file_name: str, name_for_download: str) -> None:
-    # Use MP4Box to mux the chapter file with the mp4
+    """
+    Use MP4Box to mux the chapter file with the mp4
+    """
     subprocess.run(["MP4Box", "-chap", chapter_file_name, name_for_download])
 
 
