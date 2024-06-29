@@ -64,8 +64,10 @@ def write_description_file(path, yt):
 
 
 def get_chapters(chapters_str: str) -> list:
-    # Read the description file
-    # Split into time and chapter name
+    """
+    Read the description file
+    Split into time and chapter name
+    """
 
     list_of_chapters = []
 
@@ -92,15 +94,13 @@ def get_chapters(chapters_str: str) -> list:
 
 
 def write_chapters_file(chapter_file: str, chapter_list: list) -> None:
-    # open(chapter_file, 'w').close()
-
-    # Write out the chapter file based on simple MP4 format (OGM)
-    with open(chapter_file, 'w') as fo:
+    """
+    Write out the chapter file based on simple MP4 format (OGM)
+    """
+    with open(chapter_file, 'w+b') as fo:
         for current_chapter in chapter_list:
-            fo.write(f'CHAPTER{current_chapter[0]}='
-                     f'{current_chapter[1]}\n'
-                     f'CHAPTER{current_chapter[0]}NAME='
-                     f'{current_chapter[2]}\n')
+            fo.write(f'CHAPTER{current_chapter[0]}={current_chapter[1]}\n'.encode())
+            fo.write(f'CHAPTER{current_chapter[0]}NAME={current_chapter[2]}\n'.encode())
 
 
 def add_chapters_to_mp4(chapter_file_name: str, name_for_download: str) -> None:
