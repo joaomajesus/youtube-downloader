@@ -58,7 +58,7 @@ def download_streams(url: str) -> (str, str, str):
 
 
 def write_description_file(path, yt):
-    with open(f"{path}.description.txt", 'w+b') as fo:
+    with open(f"{path}.txt", 'w+b') as fo:
         fo.write(f"From: {yt.watch_url}\n\nDescription:\n\n".encode())
         fo.write(yt.description.encode())
 
