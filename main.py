@@ -1,5 +1,10 @@
 from pytube import YouTube
-import ffmpeg, os, sys, datetime, re, subprocess
+import ffmpeg
+import os
+import sys
+import datetime
+import re
+import subprocess
 
 
 def mux_files(path_audio_source: str, path_image_source: str, path_chapters: str, out_video_path: str) -> None:
@@ -69,7 +74,7 @@ def get_chapters(chapters_str: str) -> list:
 
     line_counter = 1
     for line in chapters_str.split('\n'):
-        result = re.search(r"\(?(\d?[:]?\d+[:]\d+)\)?", line)
+        result = re.search(r"\(?(\d?:?\d+:\d+)\)?", line)
 
         try:
             time_count = datetime.datetime.strptime(result.group(1), '%H:%M:%S')

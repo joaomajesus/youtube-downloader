@@ -1,6 +1,7 @@
 # YouTube Downloader
+## About
 A simple Python script to download YouTube videos.
-## Features:
+## Features
 - Downloads the highest resolution video stream and highest bitrate audio stream and muxes them together with ffmpeg.
 - Extracts the video chapters from the description and adds them to the video with MP4Box.
 - Saves the video url and description into a text file.
