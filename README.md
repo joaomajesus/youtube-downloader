@@ -15,9 +15,9 @@ A simple Python script to download YouTube videos.
 - Install requirements: ```pip install -r requirements.txt```
 ## Usage
 ```shell
-python main.py "<YouTubeVideoUrl>"
+python youtube-downloader.py "<YouTubeVideoUrl>"
 ```
 example:
 ```shell
-python main.py "https://www.youtube.com/watch?v=cJbvcH0JNGA"
+python youtube-downloader.py "https://www.youtube.com/watch?v=cJbvcH0JNGA"
 ```
