@@ -8,7 +8,7 @@ import subprocess
 
 
 def mux_files(
-    audio_source_spath: str,
+    audio_source_path: str,
     image_source_path: str,
     chapters_path: str,
     out_video_path: str,
@@ -17,7 +17,7 @@ def mux_files(
     Muxes audio and video files into a single output video.
 
     Args:
-        audio_source_spath (str): The path to the audio file.
+        audio_source_path (str): The path to the audio file.
         image_source_path (str): The path to the video file.
         chapters_path (str): The path to the chapters file (optional).
         out_video_path (str): The path to the output video file.
@@ -26,7 +26,7 @@ def mux_files(
         None
     """
     video = ffmpeg.input(image_source_path).video
-    audio = ffmpeg.input(audio_source_spath).audio
+    audio = ffmpeg.input(audio_source_path).audio
     ffmpeg.output(audio, video, out_video_path, vcodec="copy", acodec="copy").run()
 
     if chapters_path:
