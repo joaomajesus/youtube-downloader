@@ -128,7 +128,7 @@ def get_chapters(description: str) -> list:
 
     line_counter = 1
     for line in description.split("\n"):
-        result = re.search(r"\(?(\d?:?\d+:\d+)\)?", line)
+        result = re.search(r"\(?(\d*:?\d*:\d*)\)?", line)
 
         try:
             time_count = datetime.datetime.strptime(result.group(1), "%H:%M:%S")
