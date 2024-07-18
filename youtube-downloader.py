@@ -1,4 +1,7 @@
+from typing import List
 from pytubefix import YouTube
+from pytubefix.streams import Stream
+from pytubefix.chapters import Chapter
 import ffmpeg
 import os
 import sys
@@ -66,7 +69,13 @@ def download_streams(url: str) -> (str, str, str):
     """
     output_path = "downloads/"
     chapters_path = ""
-    yt = YouTube(url)
+    yt = YouTube(
+        url,
+        use_oauth=True,
+        allow_oauth_cache=True,
+        on_progress_callback=on_progress,
+        on_complete_callback=on_complete
+    )
 
     video_path = (
         yt.streams.filter(progressive=False, file_extension="mp4")
@@ -89,13 +98,30 @@ def download_streams(url: str) -> (str, str, str):
 
     write_description_file(path, yt)
 
-    chapters = get_chapters(yt.description)
+    if len(yt.chapters) > 0:
+        print("Getting chapters from API.")
+        chapters = get_chapters(yt.chapters)
+    else:
+        print("Getting chapters from description.")
+        chapters = get_chapters_from_description(yt.description)
 
     if len(chapters) > 0:
+        print("Writing chapter information file.")
         chapters_path = f"{video_path.split(".")[0]}_chapter.txt"
         write_chapters_file(chapters_path, chapters)
+    else:
+        print("Chapter information not found.")
 
     return audio_path, video_path, chapters_path
+
+
+def on_progress(stream: Stream, chunk: bytes, bytes_remaining: int) -> None:
+    percentage = round(100 - (bytes_remaining / stream.filesize * 100))
+    print(f"{percentage}%")
+
+
+def on_complete(stream: Stream, file_path: str) -> None:
+    print(f"Download complete.")
 
 
 def write_description_file(path: str, yt: YouTube):
@@ -114,7 +140,7 @@ def write_description_file(path: str, yt: YouTube):
         fo.write(yt.description.encode())
 
 
-def get_chapters(description: str) -> list:
+def get_chapters_from_description(description: str) -> list:
     """
     Parses a string of chapters to extract the chapter positions and names.
 
@@ -141,6 +167,26 @@ def get_chapters(description: str) -> list:
         chap_name = line.replace(result.group(0), "").rstrip(" :\n")
         chap_pos = datetime.datetime.strftime(time_count, "%H:%M:%S")
         list_of_chapters.append((str(line_counter).zfill(2), chap_pos, chap_name))
+        line_counter += 1
+
+    return list_of_chapters
+
+
+def get_chapters(chapters: List[Chapter]) -> list:
+    """
+    Extracts the chapter positions and names
+
+    Parameters:
+        chapters (List[Chapter]): A list of chapter information.
+
+    Returns:
+        list: A list of tuples containing chapter number, position, and name.
+    """
+    list_of_chapters = []
+
+    line_counter = 1
+    for chapter in chapters:
+        list_of_chapters.append((str(line_counter).zfill(2), chapter.start_label, chapter.title))
         line_counter += 1
 
     return list_of_chapters
