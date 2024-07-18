@@ -1,17 +1,17 @@
-from pytube import YouTube
+from pytubefix import YouTube
 import ffmpeg
 import os
 import sys
 import datetime
-import re
 import subprocess
+import re
 
 
 def mux_files(
-    audio_source_path: str,
-    image_source_path: str,
-    chapters_path: str,
-    out_video_path: str,
+        audio_source_path: str,
+        image_source_path: str,
+        chapters_path: str,
+        out_video_path: str,
 ) -> None:
     """
     Muxes audio and video files into a single output video.
