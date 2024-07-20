@@ -11,10 +11,10 @@ import re
 
 
 def mux_files(
-        audio_source_path: str,
-        image_source_path: str,
-        chapters_path: str,
-        out_video_path: str,
+    audio_source_path: str,
+    image_source_path: str,
+    chapters_path: str,
+    out_video_path: str,
 ) -> None:
     """
     Muxes audio and video files into a single output video.
@@ -30,7 +30,11 @@ def mux_files(
     """
     video = ffmpeg.input(image_source_path).video
     audio = ffmpeg.input(audio_source_path).audio
-    ffmpeg.output(audio, video, out_video_path, vcodec="copy", acodec="copy").run()
+    (
+        ffmpeg.output(audio, video, out_video_path, vcodec="copy", acodec="copy")
+        .global_args("-hide_banner")
+        .run()
+    )
 
     if chapters_path:
         add_chapters_to_mp4(chapters_path, out_video_path)
@@ -70,11 +74,7 @@ def download_streams(url: str) -> (str, str, str):
     output_path = "downloads/"
     chapters_path = ""
     yt = YouTube(
-        url,
-        use_oauth=True,
-        allow_oauth_cache=True,
-        on_progress_callback=on_progress,
-        on_complete_callback=on_complete
+        url, use_oauth=True, allow_oauth_cache=True, on_progress_callback=on_progress
     )
 
     video_path = (
@@ -117,11 +117,13 @@ def download_streams(url: str) -> (str, str, str):
 
 def on_progress(stream: Stream, chunk: bytes, bytes_remaining: int) -> None:
     percentage = round(100 - (bytes_remaining / stream.filesize * 100))
-    print(f"{percentage}%")
+    bar = "█" * int(percentage) + "-" * (100 - int(percentage))
+    progress_bar = f"\r{stream.type}|{bar}|{percentage:.2f}%"
 
-
-def on_complete(stream: Stream, file_path: str) -> None:
-    print(f"Download complete.")
+    if percentage < 100:
+        print(progress_bar, end="\r")
+    else:
+        print(progress_bar)
 
 
 def write_description_file(path: str, yt: YouTube):
@@ -186,7 +188,9 @@ def get_chapters(chapters: List[Chapter]) -> list:
 
     line_counter = 1
     for chapter in chapters:
-        list_of_chapters.append((str(line_counter).zfill(2), chapter.start_label, chapter.title))
+        list_of_chapters.append(
+            (str(line_counter).zfill(2), chapter.start_label, chapter.title)
+        )
         line_counter += 1
 
     return list_of_chapters

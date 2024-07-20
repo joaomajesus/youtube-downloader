@@ -5,5 +5,5 @@
     <option name="enabledOnSave" value="true" />
     <option name="sdkName" value="Python 3.12 (youtube-downloader)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (YouTube)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (youtube-downloader)" project-jdk-type="Python SDK" />
 </project>
