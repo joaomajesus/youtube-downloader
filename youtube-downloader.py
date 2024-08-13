@@ -2,12 +2,14 @@ from typing import List
 from pytubefix import YouTube
 from pytubefix.streams import Stream
 from pytubefix.chapters import Chapter
+from dotenv import load_dotenv
 import ffmpeg
 import os
 import sys
 import datetime
 import subprocess
 import re
+import shutil
 
 
 def mux_files(
@@ -60,17 +62,18 @@ def delete_file(file_path: str) -> None:
         os.remove(file_path)
 
 
-def download_streams(url: str, audio_only: bool) -> (str, str, str):
+def download_streams(url: str, audio_only: bool) -> (str, str, str, str):
     """
     Downloads audio and video streams from a given URL, extracts audio and video paths, writes a description file,
     and retrieves chapters if available.
 
     Args:
         url (str): The URL of the video to download.
+        audio_only (bool): Whether to download only the audio stream.
 
     Returns:
         tuple: A tuple containing the path to the audio file, path to the video file,
-        and path to the chapters file (if available).
+        and path to the chapters file (if available) and the path to the description file.
     """
     output_path = "downloads/"
     chapters_path = ""
@@ -110,7 +113,9 @@ def download_streams(url: str, audio_only: bool) -> (str, str, str):
 
     path = audio_path.split(".")[0]
 
-    write_description_file(path, yt)
+    description_path = f"{path}.txt"
+
+    write_description_file(description_path, yt)
 
     if len(yt.chapters) > 0:
         print("Getting chapters from API.")
@@ -126,7 +131,7 @@ def download_streams(url: str, audio_only: bool) -> (str, str, str):
     else:
         print("Chapter information not found.")
 
-    return audio_path, video_path, chapters_path
+    return audio_path, video_path, chapters_path, description_path
 
 
 def on_progress(stream: Stream, chunk: bytes, bytes_remaining: int) -> None:
@@ -151,7 +156,7 @@ def write_description_file(path: str, yt: YouTube):
     Returns:
         None
     """
-    with open(f"{path}.txt", "w+b") as fo:
+    with open(path, "w+b") as fo:
         fo.write(f"From: {yt.watch_url}\n\nDescription:\n\n".encode())
         fo.write(yt.description.encode())
 
@@ -255,7 +260,11 @@ def main() -> None:
 
 
 def download(url: str, audio_only: bool = False):
-    audio_path, video_path, chapters_path = download_streams(url, audio_only)
+    load_dotenv()
+
+    audio_path, video_path, chapters_path, description_path = download_streams(
+        url, audio_only
+    )
 
     if video_path:
         dest_path: str = f"{video_path.split(".")[0]} - muxed.mp4"
@@ -272,6 +281,47 @@ def download(url: str, audio_only: bool = False):
         os.rename(dest_path, video_path)
     else:
         os.rename(dest_path, audio_path)
+
+    final_path = os.getenv("MOVE_FILES_TO")
+
+    move_files(audio_path, description_path, final_path, video_path)
+
+    print("Download complete!")
+
+
+def move_files(
+    audio_path: str, description_path: str, final_path: str, video_path: str
+) -> None:
+    """
+    Moves the downloaded files to the specified directory.
+
+    Args:
+        audio_path (str): The path to the audio file.
+        description_path (str): The path to the description file.
+        final_path (str): The path to the directory to move the files to.
+        video_path (str): The path to the video file.
+
+    Returns:
+        None
+    """
+    if final_path:
+        print(f"Moving files to {final_path}")
+
+        if not os.path.exists(final_path):
+            os.makedirs(final_path)
+
+        if video_path:
+            shutil.move(
+                video_path, os.path.join(final_path, video_path.split("\\")[-1])
+            )
+        else:
+            shutil.move(
+                audio_path, os.path.join(final_path, audio_path.split("\\")[-1])
+            )
+
+        shutil.move(
+            description_path, os.path.join(final_path, description_path.split("\\")[-1])
+        )
 
 
 if __name__ == "__main__":
