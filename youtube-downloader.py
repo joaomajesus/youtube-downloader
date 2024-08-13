@@ -11,29 +11,39 @@ import re
 
 
 def mux_files(
-        audio_source_path: str,
-        image_source_path: str,
-        chapters_path: str,
-        out_video_path: str,
+    audio_path: str,
+    video_path: str,
+    chapters_path: str,
+    out_path: str,
 ) -> None:
     """
     Muxes audio and video files into a single output video.
 
     Args:
-        audio_source_path (str): The path to the audio file.
-        image_source_path (str): The path to the video file.
+        audio_path (str): The path to the audio file.
+        video_path (str): The path to the video file.
         chapters_path (str): The path to the chapters file (optional).
-        out_video_path (str): The path to the output video file.
+        out_path (str): The path to the output file.
 
     Returns:
         None
     """
-    video = ffmpeg.input(image_source_path).video
-    audio = ffmpeg.input(audio_source_path).audio
-    ffmpeg.output(audio, video, out_video_path, vcodec="copy", acodec="copy").run()
+
+    if video_path:
+        audio = ffmpeg.input(audio_path).audio
+
+        video = ffmpeg.input(video_path).video
+
+        (
+            ffmpeg.output(audio, video, out_path, vcodec="copy", acodec="copy")
+            .global_args("-hide_banner")
+            .run()
+        )
+    else:
+        os.rename(audio_path, out_path)
 
     if chapters_path:
-        add_chapters_to_mp4(chapters_path, out_video_path)
+        add_chapters_to_mp4(chapters_path, out_path)
 
 
 def delete_file(file_path: str) -> None:
@@ -45,17 +55,12 @@ def delete_file(file_path: str) -> None:
 
     Returns:
         None: This function does not return anything.
-
-    Raises:
-        FileNotFoundError: If the file specified by `file_path` does not exist.
     """
-    if os.path.exists(file_path):
+    if file_path and os.path.exists(file_path):
         os.remove(file_path)
-    else:
-        print(f'The file "{file_path}" does not exist')
 
 
-def download_streams(url: str) -> (str, str, str):
+def download_streams(url: str, audio_only: bool) -> (str, str, str):
     """
     Downloads audio and video streams from a given URL, extracts audio and video paths, writes a description file,
     and retrieves chapters if available.
@@ -70,20 +75,19 @@ def download_streams(url: str) -> (str, str, str):
     output_path = "downloads/"
     chapters_path = ""
     yt = YouTube(
-        url,
-        use_oauth=True,
-        allow_oauth_cache=True,
-        on_progress_callback=on_progress,
-        on_complete_callback=on_complete
+        url, use_oauth=True, allow_oauth_cache=True, on_progress_callback=on_progress
     )
 
-    video_path = (
-        yt.streams.filter(progressive=False, file_extension="mp4")
-        .order_by("resolution")
-        .desc()
-        .first()
-        .download(output_path=output_path)
-    )
+    video_path = None
+
+    if not audio_only:
+        video_path = (
+            yt.streams.filter(progressive=False, file_extension="mp4")
+            .order_by("resolution")
+            .desc()
+            .first()
+            .download(output_path=output_path)
+        )
 
     audio_stream = (
         yt.streams.filter(progressive=False, only_audio=True, audio_codec="mp4a.40.2")
@@ -92,9 +96,19 @@ def download_streams(url: str) -> (str, str, str):
         .first()
     )
 
-    path = video_path.split(".")[0]
+    if audio_only:
+        audio_path = audio_stream.download(output_path=output_path)
 
-    audio_path = audio_stream.download(filename=f"{path}.m4a", output_path=output_path)
+        if audio_path.split(".")[1] == "mp4":
+            new_path = f"{audio_path.split(".")[0]}.m4a"
+            os.rename(audio_path, new_path)
+            audio_path = new_path
+    else:
+        audio_path = audio_stream.download(
+            filename=f"{video_path.split(".")[0]}.m4a", output_path=output_path
+        )
+
+    path = audio_path.split(".")[0]
 
     write_description_file(path, yt)
 
@@ -107,7 +121,7 @@ def download_streams(url: str) -> (str, str, str):
 
     if len(chapters) > 0:
         print("Writing chapter information file.")
-        chapters_path = f"{video_path.split(".")[0]}_chapter.txt"
+        chapters_path = f"{path}_chapter.txt"
         write_chapters_file(chapters_path, chapters)
     else:
         print("Chapter information not found.")
@@ -116,12 +130,14 @@ def download_streams(url: str) -> (str, str, str):
 
 
 def on_progress(stream: Stream, chunk: bytes, bytes_remaining: int) -> None:
-    percentage = round(100 - (bytes_remaining / stream.filesize * 100))
-    print(f"{percentage}%")
+    percentage = (stream.filesize - bytes_remaining) / stream.filesize * 100
+    bar = "█" * int(percentage) + "-" * (100 - int(percentage))
+    progress_bar = f"\r{stream.type}|{bar}|{percentage:.2f}%"
 
-
-def on_complete(stream: Stream, file_path: str) -> None:
-    print(f"Download complete.")
+    if percentage < 100:
+        print(progress_bar, end="\r")
+    else:
+        print(progress_bar)
 
 
 def write_description_file(path: str, yt: YouTube):
@@ -186,7 +202,9 @@ def get_chapters(chapters: List[Chapter]) -> list:
 
     line_counter = 1
     for chapter in chapters:
-        list_of_chapters.append((str(line_counter).zfill(2), chapter.start_label, chapter.title))
+        list_of_chapters.append(
+            (str(line_counter).zfill(2), chapter.start_label, chapter.title)
+        )
         line_counter += 1
 
     return list_of_chapters
@@ -232,19 +250,28 @@ def main() -> None:
     Returns:
         None
     """
-    audio_path, video_path, chapters_path = download_streams(sys.argv[1])
+    audio_only = len(sys.argv) == 3 and sys.argv[2] == "-a"
+    download(sys.argv[1], audio_only)
 
-    dest_video_path: str = f"{video_path.split(".")[0]} - muxed.mp4"
 
-    mux_files(audio_path, video_path, chapters_path, dest_video_path)
+def download(url: str, audio_only: bool = False):
+    audio_path, video_path, chapters_path = download_streams(url, audio_only)
 
-    delete_file(audio_path)
+    if video_path:
+        dest_path: str = f"{video_path.split(".")[0]} - muxed.mp4"
+    else:
+        dest_path: str = f"{audio_path.split(".")[0]} - muxed.m4a"
+
+    mux_files(audio_path, video_path, chapters_path, dest_path)
+
     delete_file(video_path)
+    delete_file(audio_path)
+    delete_file(chapters_path)
 
-    if chapters_path:
-        delete_file(chapters_path)
-
-    os.rename(dest_video_path, video_path)
+    if video_path:
+        os.rename(dest_path, video_path)
+    else:
+        os.rename(dest_path, audio_path)
 
 
 if __name__ == "__main__":
