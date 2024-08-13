@@ -1,0 +1,16 @@
+{
+    "manifest_version": 3,
+    "name": "Send to YouTube Downloader",
+    "options_page": "options.html",
+    "version": "1.0",
+    "description": "Adds a command to the right-click menu for links.",
+    "permissions": [
+        "contextMenus",
+        "activeTab",
+        "scripting",
+        "storage"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    }
+}

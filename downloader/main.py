@@ -75,7 +75,7 @@ def download_streams(url: str, audio_only: bool) -> (str, str, str, str):
         tuple: A tuple containing the path to the audio file, path to the video file,
         and path to the chapters file (if available) and the path to the description file.
     """
-    output_path = "downloads/"
+    output_path = "../downloads/"
     chapters_path = ""
     yt = YouTube(
         url, use_oauth=True, allow_oauth_cache=True, on_progress_callback=on_progress
