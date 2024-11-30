@@ -158,8 +158,10 @@ def write_description_file(path: str, yt: YouTube):
     """
     with open(path, "w+b") as fo:
         fo.write(f"From: {yt.watch_url}\n\nDescription:\n\n".encode())
-        fo.write(yt.description.encode())
-
+        try:
+            fo.write(yt.description.encode())
+        except:
+            return
 
 def get_chapters_from_description(description: str) -> list:
     """
@@ -174,24 +176,27 @@ def get_chapters_from_description(description: str) -> list:
     list_of_chapters = []
 
     line_counter = 1
-    for line in description.split("\n"):
-        result = re.search(r"\(?(\d*:?\d*:\d*)\)?", line)
 
-        try:
-            time_count = datetime.datetime.strptime(result.group(1), "%H:%M:%S")
-        except:
+    try:
+        for line in description.split("\n"):
+            result = re.search(r"\(?(\d*:?\d*:\d*)\)?", line)
+
             try:
-                time_count = datetime.datetime.strptime(result.group(1), "%M:%S")
+                time_count = datetime.datetime.strptime(result.group(1), "%H:%M:%S")
             except:
-                continue
+                try:
+                    time_count = datetime.datetime.strptime(result.group(1), "%M:%S")
+                except:
+                    continue
 
-        chap_name = line.replace(result.group(0), "").rstrip(" :\n")
-        chap_pos = datetime.datetime.strftime(time_count, "%H:%M:%S")
-        list_of_chapters.append((str(line_counter).zfill(2), chap_pos, chap_name))
-        line_counter += 1
+            chap_name = line.replace(result.group(0), "").rstrip(" :\n")
+            chap_pos = datetime.datetime.strftime(time_count, "%H:%M:%S")
+            list_of_chapters.append((str(line_counter).zfill(2), chap_pos, chap_name))
+            line_counter += 1
+    except:
+        return list_of_chapters
 
     return list_of_chapters
-
 
 def get_chapters(chapters: List[Chapter]) -> list:
     """
